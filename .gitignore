@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+*.spec
+
+# Node
+node_modules/
+
+# Runtime data
+data/nemusic.db
+data/nemusic.db-shm
+data/nemusic.db-wal
+data/cache/*
+data/downloads/*
+!data/cache/.gitkeep
+!data/downloads/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+Desktop.ini

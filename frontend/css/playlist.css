@@ -1,0 +1,8 @@
+/* === Playlist & Detail === */
+#playlist-detail-songs .song-item,
+#toplist-detail-songs .song-item {
+    display: grid;
+    grid-template-columns: 30px 40px 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+}

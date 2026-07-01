@@ -1,0 +1,22 @@
+/* === Search === */
+.search-box { display: flex; gap: 10px; margin-bottom: 20px; }
+.search-box input {
+    flex: 1;
+    padding: 10px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--bg-hover);
+    border-radius: var(--border-radius);
+    color: var(--text-primary);
+    font-size: 14px;
+}
+.search-box input:focus { outline: none; border-color: var(--accent); }
+.search-box button {
+    padding: 10px 24px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: 14px;
+}
+.search-box button:hover { background: var(--accent-hover); }

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeMusic - 网易云音乐</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/sidebar.css">
+    <link rel="stylesheet" href="css/player-bar.css">
+    <link rel="stylesheet" href="css/lyrics.css">
+    <link rel="stylesheet" href="css/search.css">
+    <link rel="stylesheet" href="css/playlist.css">
+    <link rel="stylesheet" href="css/download.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Sidebar -->
+        <nav id="sidebar">
+            <div class="sidebar-header">
+                <h1 class="app-logo">🎵 NeMusic</h1>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item active" data-page="search">
+                    <span class="nav-icon">🔍</span> 搜索
+                </li>
+                <li class="nav-item" data-page="playlists">
+                    <span class="nav-icon">📋</span> 我的歌单
+                </li>
+                <li class="nav-item" data-page="toplist">
+                    <span class="nav-icon">🏆</span> 排行榜
+                </li>
+                <li class="nav-item" data-page="downloads">
+                    <span class="nav-icon">💾</span> 下载管理
+                </li>
+            </ul>
+            <div class="sidebar-footer" id="login-area">
+                <button class="btn-login" id="btn-login">🔑 登录</button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main id="main-content">
+            <!-- Search Page -->
+            <section id="page-search" class="page active">
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="搜索歌曲、歌手、专辑..." autocomplete="off">
+                    <button id="search-btn">搜索</button>
+                </div>
+                <div class="search-results" id="search-results">
+                    <p class="empty-hint">输入关键词搜索歌曲</p>
+                </div>
+            </section>
+
+            <!-- Playlists Page -->
+            <section id="page-playlists" class="page">
+                <div id="playlist-list" class="card-grid">
+                    <p class="empty-hint">请先登录查看歌单</p>
+                </div>
+            </section>
+
+            <!-- Playlist Detail Page -->
+            <section id="page-playlist-detail" class="page">
+                <button class="btn-back" id="btn-back-playlist">← 返回</button>
+                <div class="detail-header">
+                    <img id="playlist-detail-cover" class="detail-cover" src="" alt="">
+                    <div class="detail-info">
+                        <h2 id="playlist-detail-name"></h2>
+                        <p id="playlist-detail-meta"></p>
+                        <button class="btn-play-all" id="btn-play-all-playlist">▶ 播放全部</button>
+                    </div>
+                </div>
+                <div class="song-list" id="playlist-detail-songs"></div>
+            </section>
+
+            <!-- Toplist Page -->
+            <section id="page-toplist" class="page">
+                <div id="toplist-list" class="card-grid"></div>
+            </section>
+
+            <!-- Toplist Detail Page -->
+            <section id="page-toplist-detail" class="page">
+                <button class="btn-back" id="btn-back-toplist">← 返回</button>
+                <div class="detail-header">
+                    <img id="toplist-detail-cover" class="detail-cover" src="" alt="">
+                    <div class="detail-info">
+                        <h2 id="toplist-detail-name"></h2>
+                        <button class="btn-play-all" id="btn-play-all-toplist">▶ 播放全部</button>
+                    </div>
+                </div>
+                <div class="song-list" id="toplist-detail-songs"></div>
+            </section>
+
+            <!-- Downloads Page -->
+            <section id="page-downloads" class="page">
+                <div class="download-tabs">
+                    <button class="tab-btn active" data-tab="downloads-tab">已下载</button>
+                    <button class="tab-btn" data-tab="cache-tab">缓存管理</button>
+                </div>
+                <div id="downloads-tab" class="tab-content active">
+                    <div class="song-list" id="download-list"></div>
+                    <p class="empty-hint" id="download-empty">暂无下载歌曲</p>
+                </div>
+                <div id="cache-tab" class="tab-content">
+                    <div class="song-list" id="cache-list"></div>
+                    <p class="empty-hint" id="cache-empty">暂无缓存</p>
+                </div>
+            </section>
+
+            <!-- Lyrics View -->
+            <section id="page-lyrics" class="page lyrics-overlay">
+                <div class="lyrics-bg" id="lyrics-bg"></div>
+                <div class="lyrics-content">
+                    <button class="btn-close-lyrics" id="btn-close-lyrics">✕</button>
+                    <div class="lyrics-song-info">
+                        <img id="lyrics-cover" src="" alt="">
+                        <h3 id="lyrics-title"></h3>
+                        <p id="lyrics-artist"></p>
+                    </div>
+                    <div class="lyrics-scroll" id="lyrics-scroll">
+                        <p class="lyrics-empty">暂无歌词</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Bottom Player Bar -->
+        <footer id="player-bar">
+            <div class="player-left">
+                <img id="player-cover" class="player-cover" src="" alt="">
+                <div class="player-song-info" id="player-song-info-area">
+                    <span id="player-title" class="player-title">未播放</span>
+                    <span id="player-artist" class="player-artist"></span>
+                </div>
+            </div>
+            <div class="player-center">
+                <div class="player-controls">
+                    <button class="btn-ctrl" id="btn-prev">⏮</button>
+                    <button class="btn-ctrl btn-play" id="btn-play">▶️</button>
+                    <button class="btn-ctrl" id="btn-next">⏭</button>
+                </div>
+                <div class="player-progress">
+                    <span id="progress-current">0:00</span>
+                    <input type="range" id="progress-bar" min="0" max="100" value="0">
+                    <span id="progress-total">0:00</span>
+                </div>
+            </div>
+            <div class="player-right">
+                <button class="btn-ctrl" id="btn-lyrics">🎤</button>
+                <div class="volume-control">
+                    <span>🔊</span>
+                    <input type="range" id="volume-bar" min="0" max="100" value="70">
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal hidden">
+        <div class="modal-content">
+            <button class="modal-close" id="modal-close">✕</button>
+            <h2>登录网易云音乐</h2>
+            <div class="login-tabs">
+                <button class="tab-btn active" data-login-tab="qr">二维码登录</button>
+                <button class="tab-btn" data-login-tab="phone">手机号登录</button>
+            </div>
+            <div id="login-qr-tab" class="login-tab-content active">
+                <div id="qr-container">
+                    <p>加载中...</p>
+                </div>
+            </div>
+            <div id="login-phone-tab" class="login-tab-content">
+                <input type="text" id="login-phone-input" placeholder="手机号">
+                <input type="password" id="login-password-input" placeholder="密码">
+                <button class="btn-primary" id="btn-phone-login">登录</button>
+                <p id="login-phone-error" class="login-error"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/api-bridge.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/lyrics.js"></script>
+    <script src="js/search.js"></script>
+    <script src="js/playlist.js"></script>
+    <script src="js/download.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

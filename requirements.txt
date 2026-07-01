@@ -1,0 +1,4 @@
+pywebview>=5.0
+python-vlc>=3.0.0
+pycryptodome>=3.19.0
+requests>=2.31.0
