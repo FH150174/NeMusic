@@ -195,9 +195,12 @@ var App = {
         showToast("登录成功: " + (user.nickname || ""));
 
         var loginArea = $("#login-area");
+        var avatarHtml = user.avatar
+            ? '<img src="' + user.avatar + '" alt="" onerror="this.style.display=\'none\'">'
+            : '<div class="avatar-placeholder">' + (user.nickname || "U").charAt(0).toUpperCase() + '</div>';
         loginArea.innerHTML =
             '<div class="user-info">' +
-            '<img src="' + (user.avatar || "") + '" alt="">' +
+            avatarHtml +
             '<span class="user-name">' + (user.nickname || "用户") + "</span>" +
             '<button class="btn-logout" id="btn-logout">退出</button>' +
             "</div>";

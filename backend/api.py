@@ -1,6 +1,7 @@
 """High-level API exposed to the JavaScript frontend via pywebview."""
 import hashlib
 import json
+import time as _time
 from backend.apiserver import APIHelper
 from backend.storage import Database
 from backend.player import Player
@@ -33,6 +34,9 @@ class NeMusicAPI:
         # Play queue
         self._queue = []
         self._queue_index = -1
+
+        # In-memory URL cache (avoid repeated API calls, URLs expire ~30 min)
+        self._url_cache = {}
 
     def set_window(self, window):
         self._window = window
@@ -244,6 +248,7 @@ class NeMusicAPI:
             return {"success": False, "message": str(e), "songs": [], "total": 0}
 
     # --- Play ---
+
     def play_song(self, song_info):
         """Play a song."""
         song_id = song_info.get("id")
@@ -259,14 +264,12 @@ class NeMusicAPI:
         if local_path:
             url = local_path
         else:
-            # Get streaming URL via API server
-            url_result = self._api.request("/song/url/v1", {
-                "id": str(song_id),
-                "level": "standard",
-            })
-            songs = url_result.get("data", [])
-            if not songs or not songs[0].get("url"):
-                # Try lower quality
+            # Check in-memory URL cache (valid for 25 minutes)
+            cached = self._url_cache.get(song_id)
+            if cached and _time.time() - cached["ts"] < 1500:
+                url = cached["url"]
+            else:
+                # Get streaming URL via API server
                 url_result = self._api.request("/song/url/v1", {
                     "id": str(song_id),
                     "level": "standard",
@@ -274,7 +277,9 @@ class NeMusicAPI:
                 songs = url_result.get("data", [])
                 if not songs or not songs[0].get("url"):
                     return {"success": False, "message": "该歌曲暂无版权"}
-            url = songs[0]["url"]
+                url = songs[0]["url"]
+                # Cache the URL
+                self._url_cache[song_id] = {"url": url, "ts": _time.time()}
 
         # Add to queue
         current = self._player.get_current_song()

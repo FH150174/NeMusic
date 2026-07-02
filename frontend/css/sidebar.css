@@ -40,6 +40,12 @@
 .btn-login:hover { background: var(--bg-hover); }
 .user-info { display: flex; align-items: center; gap: 10px; }
 .user-info img { width: 36px; height: 36px; border-radius: 50%; }
+.avatar-placeholder {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--bg-hover); color: var(--text-secondary);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 600;
+}
 .user-info .user-name { font-size: 13px; color: var(--text-primary); }
 .btn-logout {
     font-size: 11px;

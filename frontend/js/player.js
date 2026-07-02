@@ -42,9 +42,10 @@ var PlayerUI = {
             LyricsUI.toggle();
         });
 
-        this.elements.songInfoArea.addEventListener("click", function () {
-            LyricsUI.show();
-        });
+        // Click song info area or cover → show lyrics
+        var showLyrics = function () { LyricsUI.show(); };
+        this.elements.songInfoArea.addEventListener("click", showLyrics);
+        this.elements.cover.addEventListener("click", showLyrics);
 
         // Progress bar drag
         this.elements.progressBar.addEventListener("mousedown", function () {
