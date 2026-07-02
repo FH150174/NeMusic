@@ -25,10 +25,15 @@ NeMusic.emit = function (payload) {
 /**
  * Lazy API proxy.
  * On every call, checks if the real pywebview API is available.
- * If yes, calls it; if no, returns an error.
- * This handles the timing issue where pywebview injects its API after page load.
+ * pywebview injects its API after page load — we wait for _pywebviewready event.
  */
 NeMusic.api = createLazyAPI();
+
+// Track when pywebview API is ready
+window.addEventListener("_pywebviewready", function () {
+    window._pywebviewready = true;
+    console.log("[NeMusic] pywebview API ready");
+});
 
 function createLazyAPI() {
     return new Proxy({}, {

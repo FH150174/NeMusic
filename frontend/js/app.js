@@ -12,7 +12,17 @@ var App = {
 
         this._bindNav();
         this._bindLogin();
-        await this._checkLogin();
+
+        // Wait for pywebview API to be ready before checking login
+        var self = this;
+        if (window._pywebviewready) {
+            // Already injected
+            await this._checkLogin();
+        } else {
+            window.addEventListener("_pywebviewready", async function () {
+                await self._checkLogin();
+            });
+        }
         showPage("search");
     },
 
