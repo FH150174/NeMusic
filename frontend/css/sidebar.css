@@ -39,7 +39,8 @@
 }
 .btn-login:hover { background: var(--bg-hover); }
 .user-info { display: flex; align-items: center; gap: 10px; }
-.user-info img { width: 36px; height: 36px; border-radius: 50%; }
+.user-info .user-avatar-img { width: 36px; height: 36px; border-radius: 50%; }
+.user-info .user-avatar-img + .avatar-placeholder { display: none; }
 .avatar-placeholder {
     width: 36px; height: 36px; border-radius: 50%;
     background: var(--bg-hover); color: var(--text-secondary);

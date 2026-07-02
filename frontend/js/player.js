@@ -104,6 +104,11 @@ var PlayerUI = {
             // Auto-next handled by Python
         });
 
+        NeMusic.on("song_change", function (song) {
+            self.updateNowPlaying(song);
+            LyricsUI.load(song.id);
+        });
+
         NeMusic.on("error", function (data) {
             showToast(data.message || "播放出错", "error");
         });

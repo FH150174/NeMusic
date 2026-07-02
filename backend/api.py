@@ -356,6 +356,7 @@ class NeMusicAPI:
             self._queue_index = len(self._queue) - 1
 
         self._player.play(url, song_info)
+        self._emit("song_change", song_info)
         return {"success": True}
 
     def play_songs(self, songs, start_index=0):
@@ -405,6 +406,7 @@ class NeMusicAPI:
                 url = songs[0]["url"]
                 self._url_cache[song_id] = {"url": url, "ts": _time.time()}
         self._player.play(url, song_info)
+        self._emit("song_change", song_info)
         return {"success": True}
 
     def seek(self, position_sec):
