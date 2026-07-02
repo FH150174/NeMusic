@@ -47,6 +47,10 @@ var SearchUI = {
         }
         container.innerHTML = html;
 
+        // Pre-fetch first 5 song URLs for instant play
+        var first5 = result.songs.slice(0, 5).map(function (s) { return s.id; });
+        NeMusic.api.prefetch_urls(first5);
+
         // Click to play
         container.querySelectorAll(".song-item").forEach(function (item) {
             item.addEventListener("click", function (e) {

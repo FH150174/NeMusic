@@ -114,8 +114,8 @@ var DownloadUI = {
                         .textContent.split("·")[0].trim(),
                     cover: item.querySelector(".song-cover").src,
                 };
-                NeMusic.api.play_song(song);
                 PlayerUI.updateNowPlaying(song);
+                NeMusic.api.play_song(song);
             });
         });
 
@@ -147,8 +147,8 @@ var DownloadUI = {
                         .textContent.split("·")[0].trim(),
                     cover: item.querySelector(".song-cover").src,
                 };
-                NeMusic.api.play_song(song);
                 PlayerUI.updateNowPlaying(song);
+                NeMusic.api.play_song(song);
             });
         });
 

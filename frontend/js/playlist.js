@@ -100,6 +100,7 @@ var PlaylistUI = {
         $("#playlist-detail-meta").textContent = pl.track_count + " 首";
 
         this._renderSongList("playlist-detail-songs", result.songs);
+        NeMusic.api.prefetch_urls(result.songs.slice(0, 5).map(function (s) { return s.id; }));
         showPage("playlist-detail");
     },
 
@@ -115,6 +116,7 @@ var PlaylistUI = {
         $("#toplist-detail-name").textContent = pl.name;
 
         this._renderSongList("toplist-detail-songs", result.songs);
+        NeMusic.api.prefetch_urls(result.songs.slice(0, 5).map(function (s) { return s.id; }));
         showPage("toplist-detail");
     },
 
