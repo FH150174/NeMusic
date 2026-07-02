@@ -223,7 +223,19 @@ class NeMusicAPI:
         """Restore saved login state from database."""
         user = self._db.get_user()
         if user and user.get("cookie"):
-            self._api.cookie = _parse_cookie_string(user["cookie"])
+            cookies = _parse_cookie_string(user["cookie"])
+            if not cookies:
+                return
+            self._api.cookie = cookies
+            # Verify cookie is still valid with a quick API call
+            try:
+                acc = self._api.request("/user/account")
+                if acc.get("code") != 200:
+                    # Cookie expired, clear it
+                    self._db.clear_user()
+                    self._api.cookie = {}
+            except Exception:
+                pass  # Network error, keep saved cookie
 
     def get_login_status(self):
         """Check if user is logged in."""
@@ -244,7 +256,7 @@ class NeMusicAPI:
 
     # --- Search ---
     def search(self, keyword, limit=30, offset=0):
-        """Search songs by keyword."""
+        """Search songs by keyword. Pre-fetches first 3 song URLs for instant play."""
         try:
             result = self._api.request("/cloudsearch", {
                 "keywords": keyword,
@@ -254,6 +266,19 @@ class NeMusicAPI:
             })
             songs = _extract_songs(result)
             total = result.get("result", {}).get("songCount", len(songs))
+
+            # Pre-fetch first 3 URLs synchronously so they're ready for instant play
+            for s in songs[:3]:
+                sid = s.get("id")
+                if sid and sid not in self._url_cache:
+                    try:
+                        r = self._api.request("/song/url/v1", {"id": str(sid), "level": "standard"})
+                        d = r.get("data", [])
+                        if d and d[0].get("url"):
+                            self._url_cache[sid] = {"url": d[0]["url"], "ts": _time.time()}
+                    except Exception:
+                        pass
+
             return {"success": True, "songs": songs, "total": total}
         except Exception as e:
             return {"success": False, "message": str(e), "songs": [], "total": 0}
@@ -400,7 +425,7 @@ class NeMusicAPI:
             return {"success": False, "playlists": [], "message": str(e)}
 
     def get_playlist_detail(self, playlist_id):
-        """Get all songs in a playlist."""
+        """Get all songs in a playlist. Pre-fetches first 3 song URLs."""
         try:
             result = self._api.request("/playlist/detail", {
                 "id": str(playlist_id),
@@ -409,6 +434,19 @@ class NeMusicAPI:
             songs = []
             for track in playlist.get("tracks", []):
                 songs.append(_track_to_song(track))
+
+            # Pre-fetch first 3
+            for s in songs[:3]:
+                sid = s.get("id")
+                if sid and sid not in self._url_cache:
+                    try:
+                        r = self._api.request("/song/url/v1", {"id": str(sid), "level": "standard"})
+                        d = r.get("data", [])
+                        if d and d[0].get("url"):
+                            self._url_cache[sid] = {"url": d[0]["url"], "ts": _time.time()}
+                    except Exception:
+                        pass
+
             return {
                 "success": True,
                 "playlist": {
