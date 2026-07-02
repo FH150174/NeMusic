@@ -114,6 +114,7 @@ body {
 }
 .song-item:hover { background: var(--bg-hover); }
 .song-item.playing { background: var(--bg-hover); color: var(--accent); }
+.song-item.selected { background: var(--bg-card); border: 1px solid var(--bg-hover); }
 .song-index {
     width: 30px;
     text-align: center;

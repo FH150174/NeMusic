@@ -114,5 +114,7 @@ var PlayerUI = {
         this.elements.cover.src = song.cover || "";
         this.elements.title.textContent = song.name || "未播放";
         this.elements.artist.textContent = song.artists || "";
+        // Set button to pause state (playback starts after this call)
+        this.elements.btnPlay.textContent = "⏸";
     },
 };

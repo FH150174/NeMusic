@@ -47,13 +47,19 @@ var SearchUI = {
         }
         container.innerHTML = html;
 
-        // Pre-fetch first 5 song URLs for instant play
-        var first5 = result.songs.slice(0, 5).map(function (s) { return s.id; });
-        NeMusic.api.prefetch_urls(first5);
+        // Pre-fetch ALL song URLs for instant play
+        var allIds = result.songs.map(function (s) { return s.id; });
+        NeMusic.api.prefetch_urls(allIds);
 
-        // Click to play
+        // Single click = select, double-click = play
         container.querySelectorAll(".song-item").forEach(function (item) {
             item.addEventListener("click", function (e) {
+                if (e.target.closest(".download-btn")) return;
+                // Highlight selection
+                container.querySelectorAll(".song-item").forEach(function (i) { i.classList.remove("selected"); });
+                item.classList.add("selected");
+            });
+            item.addEventListener("dblclick", function (e) {
                 if (e.target.closest(".download-btn")) return;
                 var song = JSON.parse(item.dataset.song);
                 self.playSong(song);

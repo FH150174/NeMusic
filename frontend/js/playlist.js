@@ -100,7 +100,7 @@ var PlaylistUI = {
         $("#playlist-detail-meta").textContent = pl.track_count + " 首";
 
         this._renderSongList("playlist-detail-songs", result.songs);
-        NeMusic.api.prefetch_urls(result.songs.slice(0, 5).map(function (s) { return s.id; }));
+        NeMusic.api.prefetch_urls(result.songs.map(function (s) { return s.id; }));
         showPage("playlist-detail");
     },
 
@@ -116,7 +116,7 @@ var PlaylistUI = {
         $("#toplist-detail-name").textContent = pl.name;
 
         this._renderSongList("toplist-detail-songs", result.songs);
-        NeMusic.api.prefetch_urls(result.songs.slice(0, 5).map(function (s) { return s.id; }));
+        NeMusic.api.prefetch_urls(result.songs.map(function (s) { return s.id; }));
         showPage("toplist-detail");
     },
 
@@ -143,20 +143,18 @@ var PlaylistUI = {
         container.innerHTML = html;
 
         var self = this;
-        // Click to play
-        container.querySelectorAll(".song-item").forEach(function (item) {
-            item.addEventListener("click", async function (e) {
+        // Single click = select, double-click = play
+        container.querySelectorAll(".song-item").forEach(function (item, songIndex) {
+            item.addEventListener("click", function (e) {
+                if (e.target.closest(".download-btn")) return;
+                container.querySelectorAll(".song-item").forEach(function (i) { i.classList.remove("selected"); });
+                item.classList.add("selected");
+            });
+            item.addEventListener("dblclick", async function (e) {
                 if (e.target.closest(".download-btn")) return;
                 var song = JSON.parse(item.dataset.song);
-                // Find index
-                var idx = 0;
-                var allItems = container.querySelectorAll(".song-item");
-                for (var j = 0; j < allItems.length; j++) {
-                    if (allItems[j] === item) { idx = j; break; }
-                }
-                // Update UI immediately, then play
                 PlayerUI.updateNowPlaying(song);
-                NeMusic.api.play_songs(songs, idx);
+                NeMusic.api.play_songs(songs, songIndex);
                 LyricsUI.load(song.id);
             });
         });

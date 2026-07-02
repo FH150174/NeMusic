@@ -252,12 +252,34 @@ class NeMusicAPI:
     # --- Play ---
 
     def play_song(self, song_info):
-        """Play a song — returns immediately, plays in background."""
-        import threading as _th
-
+        """Play a song. Uses cached URL if available (<2s), otherwise fetches."""
         song_id = song_info.get("id")
         if not song_id:
             return {"success": False, "message": "No song ID"}
+
+        # Check local cache/download first
+        local_path = (
+            self._download_mgr.get_downloaded_path(song_id)
+            or self._download_mgr.get_cached_url(song_id)
+        )
+
+        if local_path:
+            url = local_path
+        else:
+            # Check in-memory URL cache (pre-fetched or previously played)
+            cached = self._url_cache.get(song_id)
+            if cached and _time.time() - cached["ts"] < 1500:
+                url = cached["url"]
+            else:
+                # Fetch URL (the only slow path — pre-fetch avoids this)
+                url_result = self._api.request("/song/url/v1", {
+                    "id": str(song_id), "level": "standard",
+                })
+                songs = url_result.get("data", [])
+                if not songs or not songs[0].get("url"):
+                    return {"success": False, "message": "该歌曲暂无版权"}
+                url = songs[0]["url"]
+                self._url_cache[song_id] = {"url": url, "ts": _time.time()}
 
         # Add to queue
         current = self._player.get_current_song()
@@ -265,51 +287,8 @@ class NeMusicAPI:
             self._queue.append(song_info)
             self._queue_index = len(self._queue) - 1
 
-        # Return immediately, fetch URL and play in background
-        def _load_and_play():
-            try:
-                # Check local cache/download
-                local_path = (
-                    self._download_mgr.get_downloaded_path(song_id)
-                    or self._download_mgr.get_cached_url(song_id)
-                )
-                if local_path:
-                    url = local_path
-                else:
-                    cached = self._url_cache.get(song_id)
-                    if cached and _time.time() - cached["ts"] < 1500:
-                        url = cached["url"]
-                    else:
-                        url_result = self._api.request("/song/url/v1", {
-                            "id": str(song_id), "level": "standard",
-                        })
-                        songs = url_result.get("data", [])
-                        if not songs or not songs[0].get("url"):
-                            self._emit("error", {"code": -1, "message": "该歌曲暂无版权"})
-                            return
-                        url = songs[0]["url"]
-                        self._url_cache[song_id] = {"url": url, "ts": _time.time()}
-
-                self._player.play(url, song_info)
-
-                # Pre-fetch next 3
-                for s in self._queue[self._queue_index + 1:self._queue_index + 4]:
-                    sid = s.get("id")
-                    if sid and sid not in self._url_cache:
-                        try:
-                            r = self._api.request("/song/url/v1", {"id": str(sid), "level": "standard"})
-                            d = r.get("data", [])
-                            if d and d[0].get("url"):
-                                self._url_cache[sid] = {"url": d[0]["url"], "ts": _time.time()}
-                        except Exception:
-                            pass
-            except Exception as e:
-                self._emit("error", {"code": -1, "message": str(e)})
-
-        t = _th.Thread(target=_load_and_play, daemon=True)
-        t.start()
-
-        return {"success": True, "loading": True}
+        self._player.play(url, song_info)
+        return {"success": True}
 
     def play_songs(self, songs, start_index=0):
         """Set play queue and start playing."""
