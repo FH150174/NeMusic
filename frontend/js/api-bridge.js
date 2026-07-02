@@ -1,16 +1,13 @@
 /* === Python-JS Bridge === */
+/* pywebview injects window.pywebview AFTER page scripts load.
+   So we use a lazy proxy that checks for the real API on every call. */
 
 window.NeMusic = window.NeMusic || {};
 var NeMusic = window.NeMusic;
 
-// Event registry
+// Event registry — Python calls NeMusic.emit(payload)
 NeMusic._listeners = {};
 
-/**
- * Register an event listener.
- * @param {string} event
- * @param {function} callback
- */
 NeMusic.on = function (event, callback) {
     if (!NeMusic._listeners[event]) {
         NeMusic._listeners[event] = [];
@@ -18,11 +15,6 @@ NeMusic.on = function (event, callback) {
     NeMusic._listeners[event].push(callback);
 };
 
-/**
- * Receive and dispatch events from Python.
- * Called by Python via: window.evaluate_js('NeMusic.emit(...)')
- * @param {object} payload — {event: string, data: object}
- */
 NeMusic.emit = function (payload) {
     var listeners = NeMusic._listeners[payload.event] || [];
     listeners.forEach(function (fn) {
@@ -31,21 +23,46 @@ NeMusic.emit = function (payload) {
 };
 
 /**
- * Reference to the Python API object.
- * pywebview exposes methods of the Python js_api object sync-style.
+ * Lazy API proxy.
+ * On every call, checks if the real pywebview API is available.
+ * If yes, calls it; if no, returns an error.
+ * This handles the timing issue where pywebview injects its API after page load.
  */
-NeMusic.api = window.pywebview ? window.pywebview.api : null;
+NeMusic.api = createLazyAPI();
 
-if (!NeMusic.api) {
-    console.warn("pywebview API not available — running in browser mode");
-    // Mock API for browser development
-    NeMusic.api = new Proxy({}, {
+function createLazyAPI() {
+    return new Proxy({}, {
         get: function (target, prop) {
+            // Ignore special properties
+            if (typeof prop === "symbol" || prop === "then" || prop === "toJSON" || prop === "inspect") {
+                return undefined;
+            }
+            // Return a function that delegates to the real API
             return function () {
-                var args = Array.prototype.slice.call(arguments);
-                console.log("[Mock API] " + prop, args);
-                return { success: false, message: "Running in browser (no Python backend)" };
+                var args = arguments;
+                var api = getRealAPI();
+                if (!api) {
+                    console.warn("[NeMusic] Real API not available yet for: " + prop);
+                    return { success: false, message: "API initializing, please retry" };
+                }
+                if (typeof api[prop] !== "function") {
+                    console.warn("[NeMusic] API method not found: " + prop);
+                    return { success: false, message: "Method not found: " + prop };
+                }
+                try {
+                    return api[prop].apply(api, args);
+                } catch (e) {
+                    console.error("[NeMusic] API call " + prop + " error:", e.message);
+                    return { success: false, message: e.message };
+                }
             };
         }
     });
+}
+
+function getRealAPI() {
+    if (typeof window.pywebview !== "undefined" && window.pywebview && window.pywebview.api) {
+        return window.pywebview.api;
+    }
+    return null;
 }
