@@ -105,7 +105,45 @@ class NeMusicAPI:
             if not qr_url:
                 return {"success": False, "message": "Failed to generate QR code"}
 
-            return {"success": True, "qr_image": qr_url, "unikey": unikey}
+            # Save QR code to a temp file as fallback for CSP-restricted WebView2
+            qr_file_path = ""
+            try:
+                import base64, os
+                # Extract base64 data from the data URI
+                if qr_url.startswith("data:image/png;base64,"):
+                    b64_data = qr_url[len("data:image/png;base64,"):]
+                elif qr_url.startswith("data:image/"):
+                    # Find the base64 part after the comma
+                    comma_idx = qr_url.find(",")
+                    if comma_idx > 0:
+                        b64_data = qr_url[comma_idx + 1:]
+                    else:
+                        b64_data = ""
+                else:
+                    b64_data = qr_img if qr_img else ""
+
+                if b64_data:
+                    png_data = base64.b64decode(b64_data)
+                    qr_dir = os.path.join(
+                        os.path.dirname(os.path.abspath(__file__)),
+                        "..", "data",
+                    )
+                    qr_dir = os.path.abspath(qr_dir)
+                    os.makedirs(qr_dir, exist_ok=True)
+                    qr_file_path = os.path.join(qr_dir, "qr_temp.png")
+                    with open(qr_file_path, "wb") as f:
+                        f.write(png_data)
+                else:
+                    qr_file_path = ""
+            except Exception:
+                qr_file_path = ""
+
+            return {
+                "success": True,
+                "qr_image": qr_url,
+                "qr_file": qr_file_path,
+                "unikey": unikey,
+            }
         except Exception as e:
             return {"success": False, "message": str(e)}
 

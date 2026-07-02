@@ -64,6 +64,7 @@ class APIServerManager:
                 stderr=subprocess.DEVNULL,
                 cwd=BASE_DIR,
                 env={**os.environ, "NEMUSIC_API_PORT": str(SERVER_PORT)},
+                creationflags=subprocess.CREATE_NO_WINDOW,
             )
         except FileNotFoundError:
             print("ERROR: Node.js not found. Please install Node.js.")

@@ -104,15 +104,51 @@ var App = {
         var container = $("#qr-container");
         container.innerHTML = "<p>加载二维码...</p>";
 
-        var result = await NeMusic.api.login_qrcode();
-        if (!result.success) {
-            container.innerHTML = "<p>" + result.message + "</p>";
+        try {
+            var result = await NeMusic.api.login_qrcode();
+        } catch (e) {
+            container.innerHTML =
+                '<p style="color:#ec4141;">加载二维码失败<br>' +
+                '<button class="btn-primary" style="margin-top:8px;" ' +
+                'onclick="App._startQRLogin()">重试</button></p>';
             return;
         }
 
+        if (!result.success) {
+            container.innerHTML =
+                '<p style="color:#ec4141;">' +
+                (result.message || "加载失败") + '<br>' +
+                '<button class="btn-primary" style="margin-top:8px;" ' +
+                'onclick="App._startQRLogin()">重试</button></p>';
+            return;
+        }
+
+        // Convert data URI to blob URL to avoid CSP restrictions
+        var qrSrc = result.qr_image || "";
+        if (qrSrc && qrSrc.indexOf("base64,") > 0) {
+            try {
+                var b64 = qrSrc.split("base64,")[1];
+                var raw = atob(b64);
+                var ua = new Uint8Array(raw.length);
+                for (var i = 0; i < raw.length; i++) {
+                    ua[i] = raw.charCodeAt(i);
+                }
+                var blob = new Blob([ua], { type: "image/png" });
+                qrSrc = URL.createObjectURL(blob);
+            } catch (e) {
+                // Fall back to data URI (might still work)
+            }
+        }
+
         container.innerHTML =
-            '<img src="' + result.qr_image +
-            '" alt="QR Code" style="width:200px;height:200px;">' +
+            '<img src="' + qrSrc +
+            '" alt="QR Code" style="width:200px;height:200px;"' +
+            ' onerror="this.style.display=\'none\';' +
+            'this.nextSibling.style.display=\'block\';">' +
+            '<div style="display:none;color:#ec4141;margin-top:10px;">' +
+            '二维码加载失败<br>' +
+            '<button class="btn-primary" style="margin-top:8px;" ' +
+            'onclick="App._startQRLogin()">重新获取</button></div>' +
             '<p style="margin-top:12px;color:#a0a0b8;font-size:13px;">' +
             '请使用 <b>网易云音乐 APP</b> 扫描二维码登录</p>';
         this._pollQRCode(result.unikey);
