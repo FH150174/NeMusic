@@ -374,13 +374,38 @@ class NeMusicAPI:
         if not self._queue:
             return {"success": False, "message": "Empty queue"}
         self._queue_index = (self._queue_index + 1) % len(self._queue)
-        return self.play_song(self._queue[self._queue_index])
+        return self._play_queued(self._queue[self._queue_index])
 
     def prev_song(self):
         if not self._queue:
             return {"success": False, "message": "Empty queue"}
         self._queue_index = (self._queue_index - 1) % len(self._queue)
-        return self.play_song(self._queue[self._queue_index])
+        return self._play_queued(self._queue[self._queue_index])
+
+    def _play_queued(self, song_info):
+        """Play a song from the queue without modifying the queue."""
+        song_id = song_info.get("id")
+        local_path = (
+            self._download_mgr.get_downloaded_path(song_id)
+            or self._download_mgr.get_cached_url(song_id)
+        )
+        if local_path:
+            url = local_path
+        else:
+            cached = self._url_cache.get(song_id)
+            if cached and _time.time() - cached["ts"] < 1500:
+                url = cached["url"]
+            else:
+                url_result = self._api.request("/song/url/v1", {
+                    "id": str(song_id), "level": "standard",
+                })
+                songs = url_result.get("data", [])
+                if not songs or not songs[0].get("url"):
+                    return {"success": False, "message": "该歌曲暂无版权"}
+                url = songs[0]["url"]
+                self._url_cache[song_id] = {"url": url, "ts": _time.time()}
+        self._player.play(url, song_info)
+        return {"success": True}
 
     def seek(self, position_sec):
         self._player.seek(position_sec)

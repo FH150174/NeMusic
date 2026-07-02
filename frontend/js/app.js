@@ -15,13 +15,19 @@ var App = {
 
         // Wait for pywebview API to be ready before checking login
         var self = this;
+        var doCheck = function () { self._checkLogin(); };
+
         if (window._pywebviewready) {
-            // Already injected
-            await this._checkLogin();
+            doCheck();
         } else {
-            window.addEventListener("_pywebviewready", async function () {
-                await self._checkLogin();
+            var ready = false;
+            window.addEventListener("_pywebviewready", function () {
+                if (!ready) { ready = true; doCheck(); }
             });
+            // Fallback: try after 2 seconds even if event didn't fire
+            setTimeout(function () {
+                if (!ready) { ready = true; doCheck(); }
+            }, 2000);
         }
         showPage("search");
     },
