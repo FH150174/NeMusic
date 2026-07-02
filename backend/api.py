@@ -265,8 +265,15 @@ class NeMusicAPI:
 
     def get_login_status(self):
         """Check if user is logged in."""
+        # Direct file write for debugging
+        try:
+            log_dir = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            with open(os.path.join(log_dir, "data", "called_get_login_status.txt"), "w") as f:
+                f.write("YES")
+        except Exception:
+            pass
+
         user = self._db.get_user()
-        _write_debug_log(["get_login_status", f"user_found={bool(user)}", f"nickname={user.get('nickname', 'N/A') if user else 'N/A'}"])
         if user:
             return {
                 "logged_in": True,
