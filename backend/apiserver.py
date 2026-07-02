@@ -119,24 +119,21 @@ class APIHelper:
     def request(self, endpoint, data=None):
         """
         Make a GET request to the local Node.js API server.
-        The Node.js server handles all Netease crypto internally,
-        including IPv4 DNS resolution.
+        The Node.js server expects cookies as a URL QUERY PARAMETER (not Cookie header).
         """
         url = f"{SERVER_URL}{endpoint}"
         params = data or {}
         params["timestamp"] = int(time.time() * 1000)
 
-        cookie_str = None
+        # NeteaseCloudMusicApi expects cookie as a query parameter
         if self._cookie_jar:
-            cookie_str = "; ".join(
-                f"{k}={v}" for k, v in self._cookie_jar.items()
-            )
-        headers = {}
-        if cookie_str:
-            headers["Cookie"] = cookie_str
+            cookie_parts = []
+            for k, v in self._cookie_jar.items():
+                cookie_parts.append(f"{k}={v}")
+            params["cookie"] = "; ".join(cookie_parts)
 
         try:
-            resp = self._session.get(url, params=params, headers=headers, timeout=30)
+            resp = self._session.get(url, params=params, timeout=30)
             return resp.json()
         except Exception as e:
             return {"code": -1, "message": str(e)}

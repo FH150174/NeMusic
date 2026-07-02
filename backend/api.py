@@ -540,14 +540,18 @@ class NeMusicAPI:
 # --- Helper Functions ---
 
 def _parse_cookie_string(cookie_str):
-    """Parse cookie string into dict."""
+    """Parse Set-Cookie string into dict, filtering out cookie attributes."""
+    # Cookie attributes (not actual cookie values)
+    ATTRS = {"max-age", "expires", "path", "domain", "httponly", "samesite", "secure"}
     cookies = {}
     if cookie_str:
         for item in cookie_str.split(";"):
             item = item.strip()
             if "=" in item:
                 k, v = item.split("=", 1)
-                cookies[k.strip()] = v.strip()
+                key = k.strip().lower()
+                if key not in ATTRS:
+                    cookies[k.strip()] = v.strip()
     return cookies
 
 
