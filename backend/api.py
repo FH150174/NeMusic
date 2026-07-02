@@ -349,11 +349,20 @@ class NeMusicAPI:
                 url = songs[0]["url"]
                 self._url_cache[song_id] = {"url": url, "ts": _time.time()}
 
-        # Add to queue
+        # Add to queue (or update index if already in queue)
         current = self._player.get_current_song()
         if not current or current.get("id") != song_id:
-            self._queue.append(song_info)
-            self._queue_index = len(self._queue) - 1
+            # Check if song is already in queue
+            found = -1
+            for i, s in enumerate(self._queue):
+                if s.get("id") == song_id:
+                    found = i
+                    break
+            if found >= 0:
+                self._queue_index = found
+            else:
+                self._queue.append(song_info)
+                self._queue_index = len(self._queue) - 1
 
         self._player.play(url, song_info)
         self._emit("song_change", song_info)
