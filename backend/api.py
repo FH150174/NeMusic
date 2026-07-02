@@ -1,5 +1,6 @@
 """High-level API exposed to the JavaScript frontend via pywebview."""
 import os
+import sys
 import hashlib
 import json
 import time as _time
@@ -8,6 +9,21 @@ from backend.storage import Database
 from backend.player import Player
 from backend.download import DownloadManager
 from backend.lyric import parse_lrc
+
+
+def _write_debug_log(entries):
+    """Write debug log to file near the exe."""
+    try:
+        if getattr(sys, "frozen", False):
+            log_dir = os.path.dirname(sys.executable)
+        else:
+            log_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        log_path = os.path.join(log_dir, "data", "nemusic_debug.log")
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(_time.strftime("%Y-%m-%d %H:%M:%S") + " " + " | ".join(entries) + "\n")
+    except Exception:
+        pass
 
 
 class NeMusicAPI:
@@ -222,24 +238,35 @@ class NeMusicAPI:
     def _restore_login(self):
         """Restore saved login state from database."""
         user = self._db.get_user()
+        _log = []
+        _log.append(f"user_found={bool(user)}")
         if user and user.get("cookie"):
             cookies = _parse_cookie_string(user["cookie"])
+            _log.append(f"cookies={list(cookies.keys())}")
             if not cookies:
+                _log.append("no_valid_cookies")
+                self._db.clear_user()
+                _write_debug_log(_log)
                 return
             self._api.cookie = cookies
-            # Verify cookie is still valid with a quick API call
             try:
                 acc = self._api.request("/user/account")
-                if acc.get("code") != 200:
-                    # Cookie expired, clear it
+                code = acc.get("code")
+                _log.append(f"verify_code={code}")
+                if code != 200:
+                    _log.append("clearing_expired_cookie")
                     self._db.clear_user()
                     self._api.cookie = {}
-            except Exception:
-                pass  # Network error, keep saved cookie
+                else:
+                    _log.append("restore_ok")
+            except Exception as e:
+                _log.append(f"verify_error={e}")
+        _write_debug_log(_log)
 
     def get_login_status(self):
         """Check if user is logged in."""
         user = self._db.get_user()
+        _write_debug_log(["get_login_status", f"user_found={bool(user)}", f"nickname={user.get('nickname', 'N/A') if user else 'N/A'}"])
         if user:
             return {
                 "logged_in": True,

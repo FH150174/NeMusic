@@ -198,9 +198,11 @@ var App = {
         showToast("登录成功: " + (user.nickname || ""));
 
         var loginArea = $("#login-area");
-        var avatarHtml = user.avatar
-            ? '<img src="' + user.avatar + '" alt="" onerror="this.style.display=\'none\'">'
-            : '<div class="avatar-placeholder">' + (user.nickname || "U").charAt(0).toUpperCase() + '</div>';
+        var initial = (user.nickname || "U").charAt(0).toUpperCase();
+        var avatarHtml = '<div class="avatar-placeholder">' + initial + '</div>';
+        if (user.avatar) {
+            avatarHtml = '<img src="' + user.avatar + '" alt="" class="user-avatar-img" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'\'">' + avatarHtml;
+        }
         loginArea.innerHTML =
             '<div class="user-info">' +
             avatarHtml +
