@@ -90,13 +90,21 @@ var LyricsUI = {
 
     /** Called when navigating to lyrics page */
     show: function () {
-        // Get current song and load lyrics
+        // Copy cover from player bar (more reliable)
+        var playerCover = $("#player-cover");
+        if (playerCover && playerCover.src) {
+            this.elements.cover.src = playerCover.src;
+        }
+        // Copy title/artist too
+        var playerTitle = $("#player-title");
+        var playerArtist = $("#player-artist");
+        if (playerTitle) this.elements.title.textContent = playerTitle.textContent;
+        if (playerArtist) this.elements.artist.textContent = playerArtist.textContent;
+
+        // Get song ID from Python and load lyrics
         try {
             var song = NeMusic.api.get_current_song();
             if (song && song.id) {
-                this.elements.cover.src = song.cover || "";
-                this.elements.title.textContent = song.name || "未在播放";
-                this.elements.artist.textContent = song.artists || "";
                 this.load(song.id);
             }
         } catch (e) {}

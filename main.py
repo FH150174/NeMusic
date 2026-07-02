@@ -18,9 +18,13 @@ _app_api = None
 
 
 def on_closing():
-    """Clean up resources when window is closed."""
+    """Save state and clean up resources when window is closed."""
     global _app_api
     if _app_api:
+        try:
+            _app_api.save_playback_state()
+        except Exception:
+            pass
         try:
             _app_api.cleanup()
         except Exception:

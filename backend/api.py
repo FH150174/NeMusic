@@ -1,4 +1,5 @@
 """High-level API exposed to the JavaScript frontend via pywebview."""
+import os
 import hashlib
 import json
 import time as _time
@@ -289,6 +290,23 @@ class NeMusicAPI:
             self._queue_index = len(self._queue) - 1
 
         self._player.play(url, song_info)
+
+        # Pre-fetch next 3 songs in background
+        import threading as _th
+        def _prefetch():
+            for s in self._queue[self._queue_index + 1:self._queue_index + 4]:
+                sid = s.get("id")
+                if sid and sid not in self._url_cache:
+                    try:
+                        r = self._api.request("/song/url/v1", {"id": str(sid), "level": "standard"})
+                        d = r.get("data", [])
+                        if d and d[0].get("url"):
+                            self._url_cache[sid] = {"url": d[0]["url"], "ts": _time.time()}
+                    except Exception:
+                        pass
+        t = _th.Thread(target=_prefetch, daemon=True)
+        t.start()
+
         return {"success": True}
 
     def play_songs(self, songs, start_index=0):
@@ -434,6 +452,38 @@ class NeMusicAPI:
     def get_toplist_detail(self, toplist_id):
         """Get songs in a toplist."""
         return self.get_playlist_detail(toplist_id)
+
+    # --- Playback State Persistence ---
+    def save_playback_state(self):
+        """Save playback state to file before closing."""
+        data = self._player.save_state_data()
+        if data:
+            state_path = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                "data", "playback_state.json",
+            )
+            try:
+                with open(state_path, "w", encoding="utf-8") as f:
+                    json.dump(data, f, ensure_ascii=False)
+            except Exception:
+                pass
+
+    def restore_playback_state(self):
+        """Restore last playback state. Called on startup."""
+        state_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "data", "playback_state.json",
+        )
+        if not os.path.exists(state_path):
+            return None
+        try:
+            with open(state_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            v = data.get("volume", 70)
+            self._player.set_volume(v)
+            return data
+        except Exception:
+            return None
 
     # --- Downloads ---
     def download_song(self, song_id, title, artist, album, cover, quality="320k"):
