@@ -143,17 +143,19 @@ var PlaylistUI = {
         var self = this;
         // Click to play
         container.querySelectorAll(".song-item").forEach(function (item) {
-            item.addEventListener("click", function (e) {
+            item.addEventListener("click", async function (e) {
                 if (e.target.closest(".download-btn")) return;
                 var song = JSON.parse(item.dataset.song);
-                // Find index and play all
+                // Find index
                 var idx = 0;
                 var allItems = container.querySelectorAll(".song-item");
                 for (var j = 0; j < allItems.length; j++) {
                     if (allItems[j] === item) { idx = j; break; }
                 }
-                NeMusic.api.play_songs(songs, idx);
+                // Update UI immediately, then play
                 PlayerUI.updateNowPlaying(song);
+                NeMusic.api.play_songs(songs, idx);
+                LyricsUI.load(song.id);
             });
         });
 
@@ -180,7 +182,8 @@ var PlaylistUI = {
         var songs = items.map(function (item) {
             return JSON.parse(item.dataset.song);
         });
-        await NeMusic.api.play_songs(songs, 0);
         PlayerUI.updateNowPlaying(songs[0]);
+        NeMusic.api.play_songs(songs, 0);
+        LyricsUI.load(songs[0].id);
     },
 };

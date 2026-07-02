@@ -74,9 +74,12 @@ var SearchUI = {
     },
 
     playSong: async function (song) {
+        // Update UI immediately for instant feedback
+        PlayerUI.updateNowPlaying(song);
         var result = await NeMusic.api.play_song(song);
         if (result.success) {
-            PlayerUI.updateNowPlaying(song);
+            // Auto-load lyrics in background
+            LyricsUI.load(song.id);
         } else {
             showToast(result.message || "播放失败", "error");
         }

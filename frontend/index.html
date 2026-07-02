@@ -23,6 +23,9 @@
                 <li class="nav-item active" data-page="search">
                     <span class="nav-icon">🔍</span> 搜索
                 </li>
+                <li class="nav-item" data-page="lyrics">
+                    <span class="nav-icon">🎤</span> 歌词
+                </li>
                 <li class="nav-item" data-page="playlists">
                     <span class="nav-icon">📋</span> 我的歌单
                 </li>
@@ -106,19 +109,17 @@
                 </div>
             </section>
 
-            <!-- Lyrics View -->
-            <section id="page-lyrics" class="page lyrics-overlay">
-                <div class="lyrics-bg" id="lyrics-bg"></div>
-                <div class="lyrics-content">
-                    <button class="btn-close-lyrics" id="btn-close-lyrics">✕</button>
-                    <div class="lyrics-song-info">
-                        <img id="lyrics-cover" src="" alt="">
-                        <h3 id="lyrics-title"></h3>
+            <!-- Lyrics Page (full page) -->
+            <section id="page-lyrics" class="page">
+                <div class="lyrics-page-header">
+                    <img id="lyrics-cover" src="" alt="">
+                    <div class="lyrics-page-info">
+                        <h2 id="lyrics-title">未在播放</h2>
                         <p id="lyrics-artist"></p>
                     </div>
-                    <div class="lyrics-scroll" id="lyrics-scroll">
-                        <p class="lyrics-empty">暂无歌词</p>
-                    </div>
+                </div>
+                <div class="lyrics-scroll" id="lyrics-scroll">
+                    <p class="lyrics-empty" id="lyrics-empty">请先播放一首歌曲</p>
                 </div>
             </section>
         </main>

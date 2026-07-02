@@ -38,14 +38,13 @@ var PlayerUI = {
             NeMusic.api.next_song();
         });
 
+        // Lyrics button or clicking song info area → go to lyrics page
         this.elements.btnLyrics.addEventListener("click", function () {
-            LyricsUI.toggle();
+            LyricsUI.show();
         });
-
-        // Click song info area or cover → show lyrics
-        var showLyrics = function () { LyricsUI.show(); };
-        this.elements.songInfoArea.addEventListener("click", showLyrics);
-        this.elements.cover.addEventListener("click", showLyrics);
+        var goLyrics = function () { LyricsUI.show(); };
+        this.elements.songInfoArea.addEventListener("click", goLyrics);
+        this.elements.cover.addEventListener("click", goLyrics);
 
         // Progress bar drag
         this.elements.progressBar.addEventListener("mousedown", function () {

@@ -164,7 +164,8 @@ class NeMusicAPI:
             elif code == 803:
                 cookie = result.get("cookie", "")
                 self._api.cookie = _parse_cookie_string(cookie)
-                profile = result.get("profile", {})
+                # QR login returns user info at top level (NOT inside "profile")
+                profile = result.get("profile") or result
                 uid = profile.get("userId", 0)
                 nickname = profile.get("nickname", "")
                 avatar = profile.get("avatarUrl", "")

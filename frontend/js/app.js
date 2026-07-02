@@ -21,7 +21,10 @@ var App = {
             item.addEventListener("click", async function () {
                 var page = item.dataset.page;
 
-                if (page === "playlists") {
+                if (page === "lyrics") {
+                    LyricsUI.show();
+                    return;
+                } else if (page === "playlists") {
                     await PlaylistUI.loadUserPlaylists();
                 } else if (page === "toplist") {
                     await PlaylistUI.loadToplist();
