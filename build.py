@@ -68,8 +68,6 @@ def build():
         # Include Node.js API server script
         f"--add-data={os.path.join(BASE_DIR, 'api_server.js')}{os.pathsep}.",
         f"--add-data={os.path.join(BASE_DIR, 'crypto_helper.js')}{os.pathsep}.",
-        # Include node_modules
-        f"--add-data={os.path.join(BASE_DIR, 'node_modules')}{os.pathsep}node_modules",
         "--hidden-import=vlc",
         "--hidden-import=pywebview",
         "--hidden-import=requests",

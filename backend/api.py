@@ -1,7 +1,7 @@
 """High-level API exposed to the JavaScript frontend via pywebview."""
 import hashlib
 import json
-from backend.apiserver import APIServerManager
+from backend.apiserver import APIHelper
 from backend.storage import Database
 from backend.player import Player
 from backend.download import DownloadManager
@@ -14,13 +14,12 @@ class NeMusicAPI:
     def __init__(self):
         self._window = None
         self._db = Database()
-        self._server = APIServerManager()
+        self._api = APIHelper()
         self._player = Player()
-        self._download_mgr = None  # Created after server starts
 
-        # Start the API server
-        self._server.start()
-        self._download_mgr = DownloadManager(self._server, self._db)
+        # Start the Node.js API server (hidden console)
+        self._api.start()
+        self._download_mgr = DownloadManager(self._api, self._db)
 
         # Restore saved login
         self._restore_login()
@@ -67,7 +66,7 @@ class NeMusicAPI:
         """Login with phone number and md5 password."""
         md5_pw = hashlib.md5(password.encode()).hexdigest()
         try:
-            result = self._server.request("/login/cellphone", {
+            result = self._api.request("/login/cellphone", {
                 "phone": phone,
                 "md5_password": md5_pw,
             })
@@ -79,13 +78,13 @@ class NeMusicAPI:
         """Get QR code for login. Returns qr_image (data URI) and unikey."""
         try:
             # Step 1: Get unikey
-            key_result = self._server.request("/login/qr/key")
+            key_result = self._api.request("/login/qr/key")
             unikey = key_result.get("data", {}).get("unikey", "")
             if not unikey:
                 return {"success": False, "message": "Failed to get QR key"}
 
             # Step 2: Create QR image
-            qr_result = self._server.request("/login/qr/create", {
+            qr_result = self._api.request("/login/qr/create", {
                 "key": unikey,
                 "qrimg": "true",
             })
@@ -150,7 +149,7 @@ class NeMusicAPI:
     def check_qrcode(self, unikey):
         """Check QR code login status."""
         try:
-            result = self._server.request("/login/qr/check", {"key": unikey})
+            result = self._api.request("/login/qr/check", {"key": unikey})
             code = result.get("code")
             if code == 800:
                 return {"status": "expired"}
@@ -160,7 +159,7 @@ class NeMusicAPI:
                 return {"status": "scanned"}
             elif code == 803:
                 cookie = result.get("cookie", "")
-                self._server.cookie = _parse_cookie_string(cookie)
+                self._api.cookie = _parse_cookie_string(cookie)
                 profile = result.get("profile", {})
                 uid = profile.get("userId", 0)
                 nickname = profile.get("nickname", "")
@@ -181,7 +180,7 @@ class NeMusicAPI:
         code = result.get("code")
         if code == 200:
             cookie = result.get("cookie", "")
-            self._server.cookie = _parse_cookie_string(cookie)
+            self._api.cookie = _parse_cookie_string(cookie)
             profile = result.get("profile", {})
             uid = profile.get("userId", 0)
             nickname = profile.get("nickname", "")
@@ -209,7 +208,7 @@ class NeMusicAPI:
         """Restore saved login state from database."""
         user = self._db.get_user()
         if user and user.get("cookie"):
-            self._server.cookie = _parse_cookie_string(user["cookie"])
+            self._api.cookie = _parse_cookie_string(user["cookie"])
 
     def get_login_status(self):
         """Check if user is logged in."""
@@ -225,14 +224,14 @@ class NeMusicAPI:
 
     def logout(self):
         self._db.clear_user()
-        self._server.cookie = {}
+        self._api.cookie = {}
         return {"success": True}
 
     # --- Search ---
     def search(self, keyword, limit=30, offset=0):
         """Search songs by keyword."""
         try:
-            result = self._server.request("/cloudsearch", {
+            result = self._api.request("/cloudsearch", {
                 "keywords": keyword,
                 "limit": str(limit),
                 "offset": str(offset),
@@ -261,14 +260,14 @@ class NeMusicAPI:
             url = local_path
         else:
             # Get streaming URL via API server
-            url_result = self._server.request("/song/url/v1", {
+            url_result = self._api.request("/song/url/v1", {
                 "id": str(song_id),
                 "level": "standard",
             })
             songs = url_result.get("data", [])
             if not songs or not songs[0].get("url"):
                 # Try lower quality
-                url_result = self._server.request("/song/url/v1", {
+                url_result = self._api.request("/song/url/v1", {
                     "id": str(song_id),
                     "level": "standard",
                 })
@@ -349,7 +348,7 @@ class NeMusicAPI:
     def get_lyric(self, song_id):
         """Get parsed lyrics for a song."""
         try:
-            result = self._server.request("/lyric", {"id": str(song_id)})
+            result = self._api.request("/lyric", {"id": str(song_id)})
             lrc_data = result.get("lrc", {})
             lrc_text = lrc_data.get("lyric", "")
             if not lrc_text:
@@ -370,7 +369,7 @@ class NeMusicAPI:
                     "playlists": [],
                     "message": "Not logged in",
                 }
-            result = self._server.request("/user/playlist", {
+            result = self._api.request("/user/playlist", {
                 "uid": str(user["uid"]),
             })
             playlists = []
@@ -389,7 +388,7 @@ class NeMusicAPI:
     def get_playlist_detail(self, playlist_id):
         """Get all songs in a playlist."""
         try:
-            result = self._server.request("/playlist/detail", {
+            result = self._api.request("/playlist/detail", {
                 "id": str(playlist_id),
             })
             playlist = result.get("playlist", {})
@@ -413,7 +412,7 @@ class NeMusicAPI:
     def get_toplist(self):
         """Get all official toplists."""
         try:
-            result = self._server.request("/toplist/detail")
+            result = self._api.request("/toplist/detail")
             lists = []
             for tl in result.get("list", []):
                 lists.append({
@@ -478,7 +477,7 @@ class NeMusicAPI:
     def cleanup(self):
         """Clean up resources on exit."""
         self._player.destroy()
-        self._server.stop()
+        self._api.stop()
         self._db.close()
 
 

@@ -2,13 +2,15 @@
 import os
 import sys
 import time
+import json
+import atexit
 import subprocess
 import requests
+import threading
 
 # Handle PyInstaller bundle paths
-import sys as _sys
-if getattr(_sys, "frozen", False):
-    BASE_DIR = _sys._MEIPASS
+if getattr(sys, "frozen", False):
+    BASE_DIR = sys._MEIPASS
 else:
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -18,7 +20,9 @@ SERVER_URL = f"http://127.0.0.1:{SERVER_PORT}"
 
 def _find_node():
     """Find the node executable."""
-    import subprocess
+    bundle_node = os.path.join(BASE_DIR, "node.exe")
+    if os.path.exists(bundle_node):
+        return bundle_node
     try:
         result = subprocess.run(
             ["where", "node"], capture_output=True, text=True
@@ -29,11 +33,9 @@ def _find_node():
                 return node_path
     except Exception:
         pass
-    # Common paths
     paths = [
         r"C:\Program Files\nodejs\node.exe",
         r"D:\Node.js\node.exe",
-        os.path.expandvars(r"%APPDATA%\nvm\current\node.exe"),
     ]
     for p in paths:
         if os.path.exists(p):
@@ -41,21 +43,28 @@ def _find_node():
     return "node"
 
 
-class APIServerManager:
-    """Start/stop the Node.js NeteaseCloudMusicApi server and proxy requests."""
+class APIHelper:
+    """Start the Node.js API server and proxy requests through it."""
 
     def __init__(self):
         self._process = None
         self._session = requests.Session()
         self._cookie_jar = {}
+        self._lock = threading.Lock()
 
     def start(self):
-        """Start the Node.js API server."""
+        """Start the Node.js API server with hidden console window."""
         if self._process is not None:
             return True
 
         js_path = os.path.join(BASE_DIR, "api_server.js")
         node_exe = _find_node()
+
+        # Hide console window
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startupinfo.wShowWindow = subprocess.SW_HIDE
+        creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
 
         try:
             self._process = subprocess.Popen(
@@ -64,21 +73,22 @@ class APIServerManager:
                 stderr=subprocess.DEVNULL,
                 cwd=BASE_DIR,
                 env={**os.environ, "NEMUSIC_API_PORT": str(SERVER_PORT)},
-                creationflags=subprocess.CREATE_NO_WINDOW,
+                startupinfo=startupinfo,
+                creationflags=creationflags,
             )
         except FileNotFoundError:
-            print("ERROR: Node.js not found. Please install Node.js.")
             return False
 
-        # Wait for server to be ready (max 15 seconds)
-        for _ in range(30):
+        # Wait up to 20 seconds for server ready
+        for _ in range(40):
             try:
                 resp = self._session.get(
                     f"{SERVER_URL}/login/qr/key",
                     params={"timestamp": int(time.time() * 1000)},
-                    timeout=3,
+                    timeout=2,
                 )
                 if resp.status_code == 200:
+                    atexit.register(self.stop)
                     return True
             except requests.ConnectionError:
                 pass
@@ -87,7 +97,6 @@ class APIServerManager:
         return False
 
     def stop(self):
-        """Stop the Node.js API server."""
         if self._process:
             try:
                 self._process.terminate()
@@ -110,7 +119,8 @@ class APIServerManager:
     def request(self, endpoint, data=None):
         """
         Make a GET request to the local Node.js API server.
-        The server handles all Netease crypto internally.
+        The Node.js server handles all Netease crypto internally,
+        including IPv4 DNS resolution.
         """
         url = f"{SERVER_URL}{endpoint}"
         params = data or {}
@@ -121,15 +131,12 @@ class APIServerManager:
             cookie_str = "; ".join(
                 f"{k}={v}" for k, v in self._cookie_jar.items()
             )
-
         headers = {}
         if cookie_str:
             headers["Cookie"] = cookie_str
 
         try:
-            resp = self._session.get(
-                url, params=params, headers=headers, timeout=30
-            )
+            resp = self._session.get(url, params=params, headers=headers, timeout=30)
             return resp.json()
         except Exception as e:
             return {"code": -1, "message": str(e)}
