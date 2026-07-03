@@ -28,7 +28,7 @@
 .lyrics-scroll {
     overflow-y: auto;
     max-height: calc(100vh - var(--player-height) - 260px);
-    padding: 12px 0;
+    padding: 50vh 0;
     scroll-behavior: smooth;
 }
 .lyrics-line {

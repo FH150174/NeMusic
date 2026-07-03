@@ -14,16 +14,18 @@ var LyricsUI = {
         this.elements.empty = $("#lyrics-empty");
     },
 
-    /** Load lyrics for a song and cache them */
-    load: async function (songId) {
+    /** Load lyrics and update cover/title */
+    load: async function (songId, songInfo) {
         if (!songId || songId === this.currentSongId) return;
         this.currentSongId = songId;
 
         this.reset();
 
-        // Get song info from Python
-        var song = {};
-        try { song = NeMusic.api.get_current_song(); } catch (e) {}
+        // Use passed song info first, fall back to API
+        var song = songInfo || {};
+        if (!song.name) {
+            try { song = NeMusic.api.get_current_song(); } catch (e) {}
+        }
 
         this.elements.cover.src = song.cover || "";
         this.elements.title.textContent = song.name || "";
@@ -35,7 +37,6 @@ var LyricsUI = {
         if (!this.lines.length) {
             this.elements.empty.style.display = "block";
             this.elements.empty.textContent = result.message || "暂无歌词";
-            this.elements.scroll.innerHTML = "";
         } else {
             this.elements.empty.style.display = "none";
             var html = "";
@@ -47,7 +48,6 @@ var LyricsUI = {
             }
             this.elements.scroll.innerHTML = html;
 
-            // Click to seek
             var self = this;
             this.elements.scroll.querySelectorAll(".lyrics-line").forEach(function (el) {
                 el.addEventListener("click", function () {
@@ -83,29 +83,29 @@ var LyricsUI = {
             var el = lines[index];
             el.classList.add("active");
             var containerH = this.elements.scroll.clientHeight;
-            this.elements.scroll.scrollTop =
-                el.offsetTop - containerH / 2 + el.clientHeight / 2;
+            var target = el.offsetTop - containerH / 2 + el.offsetHeight / 2;
+            this.elements.scroll.scrollTo({
+                top: Math.max(0, target),
+                behavior: "smooth"
+            });
         }
     },
 
     /** Called when navigating to lyrics page */
     show: function () {
-        // Copy cover from player bar (more reliable)
         var playerCover = $("#player-cover");
         if (playerCover && playerCover.src) {
             this.elements.cover.src = playerCover.src;
         }
-        // Copy title/artist too
         var playerTitle = $("#player-title");
         var playerArtist = $("#player-artist");
         if (playerTitle) this.elements.title.textContent = playerTitle.textContent;
         if (playerArtist) this.elements.artist.textContent = playerArtist.textContent;
 
-        // Get song ID from Python and load lyrics
         try {
             var song = NeMusic.api.get_current_song();
             if (song && song.id) {
-                this.load(song.id);
+                this.load(song.id, song);
             }
         } catch (e) {}
         showPage("lyrics");

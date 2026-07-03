@@ -106,7 +106,7 @@ var PlayerUI = {
 
         NeMusic.on("song_change", function (song) {
             self.updateNowPlaying(song);
-            LyricsUI.load(song.id);
+            LyricsUI.load(song.id, song);
         });
 
         NeMusic.on("error", function (data) {
