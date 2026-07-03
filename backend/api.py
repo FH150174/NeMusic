@@ -100,9 +100,12 @@ class NeMusicAPI:
         try:
             # Step 1: Get unikey
             key_result = self._api.request("/login/qr/key")
+            if key_result.get("code") != 200:
+                msg = key_result.get("message") or key_result.get("msg") or f"code={key_result.get('code')}"
+                return {"success": False, "message": f"服务器连接失败: {msg}"}
             unikey = key_result.get("data", {}).get("unikey", "")
             if not unikey:
-                return {"success": False, "message": "Failed to get QR key"}
+                return {"success": False, "message": f"获取二维码失败: {key_result}"}
 
             # Step 2: Create QR image
             qr_result = self._api.request("/login/qr/create", {
