@@ -121,6 +121,11 @@ class APIHelper:
         Make a GET request to the local Node.js API server.
         The Node.js server expects cookies as a URL QUERY PARAMETER (not Cookie header).
         """
+        if not self.is_running:
+            # Try restarting the server
+            if not self.start():
+                return {"code": -1, "message": "API server not running"}
+
         url = f"{SERVER_URL}{endpoint}"
         params = data or {}
         params["timestamp"] = int(time.time() * 1000)
