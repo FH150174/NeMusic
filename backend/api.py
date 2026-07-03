@@ -34,13 +34,8 @@ class NeMusicAPI:
         self._db = Database()
         self._api = APIHelper()
         self._player = Player()
-
-        # Start the Node.js API server (hidden console)
-        self._api.start()
         self._download_mgr = DownloadManager(self._api, self._db)
-
-        # Restore saved login
-        self._restore_login()
+        self._backend_started = False
 
         # Set up player callbacks
         self._player.set_callback("on_position_change", self._on_position_change)
@@ -52,8 +47,16 @@ class NeMusicAPI:
         self._queue = []
         self._queue_index = -1
 
-        # In-memory URL cache (avoid repeated API calls, URLs expire ~30 min)
+        # In-memory URL cache
         self._url_cache = {}
+
+    def start_backend(self):
+        """Start the Node.js API server and restore login. Call after window is ready."""
+        ok = self._api.start()
+        self._backend_started = ok
+        if ok:
+            self._restore_login()
+        return ok
 
     def set_window(self, window):
         self._window = window

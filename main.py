@@ -1,6 +1,7 @@
 """NeMusic - NetEase Cloud Music Desktop Player."""
 import os
 import sys
+import threading
 import webview
 
 # Handle PyInstaller bundle paths
@@ -31,8 +32,17 @@ def on_closing():
             pass
 
 
+def _start_api_server(api):
+    """Start the API server in background thread."""
+    ok = api.start_backend()
+    if not ok:
+        api._emit("error", {"code": -1, "message": "API服务器启动失败，请检查Node.js是否安装"})
+
+
 def main():
     global _app_api
+
+    # Create API without starting backend (fast)
     api = NeMusicAPI()
     _app_api = api
 
@@ -48,6 +58,10 @@ def main():
     )
     api.set_window(window)
     window.events.closing += on_closing
+
+    # Start API server in background after window is shown
+    threading.Thread(target=_start_api_server, args=(api,), daemon=True).start()
+
     webview.start(debug=False, http_server=True)
 
 
